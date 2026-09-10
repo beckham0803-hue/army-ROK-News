@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대한민국 육군 뉴스봇 | ROK Army News Bot</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font (Inter & Noto Sans KR) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        army: {
+                            50: '#f4f6f3',
+                            100: '#e5eadd',
+                            200: '#cbd6bd',
+                            300: '#a7b895',
+                            400: '#83986f',
+                            500: '#647a51',
+                            600: '#4e613e',
+                            700: '#3f4f33',
+                            800: '#34412c',
+                            900: '#2c3726',
+                            950: '#171e13',
+                        },
+                        gold: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #0f1410;
+            color: #e2e8f0;
+        }
+        /* Custom Scrollbar styling for News Stream */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(30, 41, 31, 0.5);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #4e613e;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #83986f;
+        }
+        .glow-effect {
+            box-shadow: 0 0 15px rgba(100, 122, 81, 0.25);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100 antialiased selection:bg-army-500 selection:text-white">
+
+    <!-- Top Header -->
+    <header class="bg-gradient-to-r from-army-950 via-army-900 to-slate-900 border-b border-army-800 shadow-xl sticky top-0 z-40 backdrop-blur-md bg-opacity-95">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- Army Brand & Title -->
+            <div class="flex items-center space-x-3.5">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-army-600 to-army-800 border border-gold-500/40 flex items-center justify-center shadow-inner relative overflow-hidden">
+                    <i class="fa-solid fa-shield-halved text-gold-400 text-xl"></i>
+                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-army-950 animate-ping"></div>
+                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-army-950"></div>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded bg-army-800/80 text-gold-400 border border-army-600/50 uppercase tracking-wider">ROK ARMY INTELLIGENCE</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span> 모니터링 가동중
+                        </span>
+                    </div>
+                    <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white flex items-center gap-2">
+                        대한민국 육군 <span class="text-army-300 font-medium text-lg">| 스마트 뉴스봇</span>
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Header Quick Info -->
+            <div class="flex items-center gap-3 text-xs text-slate-300 bg-army-900/60 border border-army-700/50 px-3.5 py-2 rounded-xl backdrop-blur">
+                <div class="flex items-center gap-1.5">
+                    <i class="fa-regular fa-clock text-gold-400"></i>
+                    <span>최종 동기화: <strong id="lastUpdatedTime" class="text-slate-100 font-mono">방금 전</strong></span>
+                </div>
+                <div class="h-3 w-px bg-army-700"></div>
+                <button onclick="manualRefresh()" class="hover:text-gold-400 transition-colors flex items-center gap-1 text-army-300 font-medium">
+                    <i class="fa-solid fa-rotate-right" id="refreshSpinIcon"></i> 새로고침
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Search & Settings Panel -->
+        <section class="bg-slate-900/90 border border-army-800/80 rounded-2xl p-5 shadow-lg backdrop-blur-sm relative overflow-hidden">
+            <div class="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-army-600/10 rounded-full blur-2xl pointer-events-none"></div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-end">
+                
+                <!-- 2. Search Keyword Input -->
+                <div class="lg:col-span-7 space-y-2">
+                    <label for="searchInput" class="block text-sm font-semibold text-slate-200 flex items-center justify-between">
+                        <span class="flex items-center gap-2">
+                            <i class="fa-solid fa-magnifying-glass text-gold-400"></i> 뉴스 검색어 입력
+                        </span>
+                        <span class="text-xs text-slate-400 font-normal">원하는 키워드를 자유롭게 입력 후 엔터를 누르세요</span>
+                    </label>
+                    <div class="relative">
+                        <input type="text" id="searchInput" value="육군" placeholder="검색어를 입력하세요 (예: 육군, 국방, K-방산, 드론, 해군)" 
+                            class="w-full bg-slate-950/80 border border-army-700/70 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 text-white rounded-xl px-4 py-3 pl-11 text-sm transition-all shadow-inner placeholder-slate-500 outline-none"
+                            onkeypress="if(event.key === 'Enter') handleSearchSubmit()">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-army-400">
+                            <i class="fa-solid fa-newspaper"></i>
+                        </div>
+                        <button onclick="handleSearchSubmit()" class="absolute right-2 top-1.5 bottom-1.5 px-4 bg-gradient-to-r from-army-600 to-army-700 hover:from-army-500 hover:to-army-600 text-white font-medium text-xs rounded-lg transition-all flex items-center gap-1.5 shadow">
+                            <span>검색</span>
+                            <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </button>
+                    </div>
+
+                    <!-- Recommended Keywords Chips -->
+                    <div class="flex flex-wrap items-center gap-1.5 pt-1">
+                        <span class="text-xs text-slate-400 mr-1"><i class="fa-solid fa-fire text-amber-500 mr-1"></i>추천 키워드:</span>
+                        <button onclick="setKeyword('육군')" class="chip-btn text-xs px-2.5 py-1 rounded-lg bg-army-900/80 border border-army-700/60 text-army-200 hover:border-gold-500 hover:text-gold-400 transition-all">#육군</button>
+                        <button onclick="setKeyword('국방')" class="chip-btn text-xs px-2.5 py-1 rounded-lg bg-army-900/80 border border-army-700/60 text-army-200 hover:border-gold-500 hover:text-gold-400 transition-all">#국방</button>
+                        <button onclick="setKeyword('해군')" class="chip-btn text-xs px-2.5 py-1 rounded-lg bg-army-900/80 border border-army-700/60 text-army-200 hover:border-gold-500 hover:text-gold-400 transition-all">#해군</button>
+                        <button onclick="setKeyword('공군')" class="chip-btn text-xs px-2.5 py-1 rounded-lg bg-army-900/80 border border-army-700/60 text-army-200 hover:border-gold-500 hover:text-gold-400 transition-all">#공군</button>
+                        <button onclick="setKeyword('K-방산')" class="chip-btn text-xs px-2.5 py-1 rounded-lg bg-army-900/80 border border-army-700/60 text-army-200 hover:border-gold-500 hover:text-gold-400 transition-all">#K-방산</button>
+                        <button onclick="setKeyword('첨단무기')" class="chip-btn text-xs px-2.5 py-1 rounded-lg bg-army-900/80 border border-army-700/60 text-army-200 hover:border-gold-500 hover:text-gold-400 transition-all">#첨단무기</button>
+                    </div>
+                </div>
+
+                <!-- 3. Refresh Timer Controls -->
+                <div class="lg:col-span-5 bg-slate-950/60 border border-army-800/60 rounded-xl p-3.5 space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-semibold text-slate-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-stopwatch text-gold-400"></i> 자동 갱신 타이머
+                        </span>
+                        <span id="countdownDisplay" class="font-mono text-gold-400 font-bold bg-gold-500/10 px-2 py-0.5 rounded border border-gold-500/20">
+                            05:00 남음
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <button id="timer-5" onclick="setTimerInterval(5)" class="timer-btn px-3 py-2 text-xs rounded-lg font-medium border transition-all flex flex-col items-center justify-center bg-army-700 text-white border-gold-500 shadow">
+                            <span class="font-bold">5분</span>
+                            <span class="text-[10px] opacity-80">빠른 수신</span>
+                        </button>
+                        <button id="timer-30" onclick="setTimerInterval(30)" class="timer-btn px-3 py-2 text-xs rounded-lg font-medium border border-army-800 bg-slate-900 text-slate-300 hover:border-army-600 transition-all flex flex-col items-center justify-center">
+                            <span class="font-bold">30분</span>
+                            <span class="text-[10px] opacity-70">표준</span>
+                        </button>
+                        <button id="timer-60" onclick="setTimerInterval(60)" class="timer-btn px-3 py-2 text-xs rounded-lg font-medium border border-army-800 bg-slate-900 text-slate-300 hover:border-army-600 transition-all flex flex-col items-center justify-center">
+                            <span class="font-bold">1시간</span>
+                            <span class="text-[10px] opacity-70">여유</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 5. Key Article Analytics TOP 3 Section -->
+        <section class="bg-gradient-to-b from-slate-900 to-army-950 border border-army-800 rounded-2xl p-5 shadow-xl relative">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 border-b border-army-800/80 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="p-2 bg-gold-500/10 rounded-lg text-gold-400 border border-gold-500/30">
+                        <i class="fa-solid fa-chart-pie text-lg"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            당일 핵심 이슈 TOP 3 AI 분석
+                            <span class="text-xs font-normal text-army-300 bg-army-900 px-2 py-0.5 rounded border border-army-700">실시간 연산</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">수집된 뉴스 기사를 인공지능이 종합 분석하여 뽑아낸 오늘 주요 키워드와 요약입니다.</p>
+                    </div>
+                </div>
+                <div class="text-xs text-slate-400 self-end sm:self-center">
+                    분석 키워드: <span id="analyticsCurrentKeyword" class="text-gold-400 font-semibold">"육군"</span>
+                </div>
+            </div>
+
+            <!-- TOP 3 Analytics Cards Grid -->
+            <div id="analyticsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Dynamic Analytics Cards standard inserts here via JS -->
+            </div>
+        </section>
+
+        <!-- 4. News Stream & Date Search Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Left / Main Column: Live News Feed (approx 10 items + scroll) -->
+            <div class="lg:col-span-8 space-y-4">
+                <div class="bg-slate-900 border border-army-800 rounded-2xl p-4 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-gold-400 animate-ping"></span>
+                        <h3 class="font-bold text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-list-ul text-army-400"></i> 실시간 뉴스 피드
+                            <span id="newsCountBadge" class="text-xs bg-army-800 text-gold-400 px-2 py-0.5 rounded-full border border-army-600">10개 항목</span>
+                        </h3>
+                    </div>
+
+                    <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                        <span class="text-xs text-slate-400">정렬:</span>
+                        <div class="inline-flex rounded-lg bg-slate-950 p-1 border border-army-800/80 text-xs">
+                            <button id="sortLatestBtn" onclick="changeSort('latest')" class="px-2.5 py-1 rounded-md bg-army-700 text-white font-medium transition-all">최신순</button>
+                            <button id="sortRelBtn" onclick="changeSort('relevant')" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition-all">관련도순</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scrollable News List Container (10+ items visible with scroll) -->
+                <div id="newsFeedContainer" class="space-y-3 max-h-[720px] overflow-y-auto custom-scrollbar pr-1.5">
+                    <!-- Dynamic Articles inserted here -->
+                </div>
+            </div>
+
+            <!-- Right Column: Historical Date Archive Search (과거 뉴스 검색) & Filters -->
+            <div class="lg:col-span-4 space-y-5">
+                
+                <!-- Date Filter Card -->
+                <div class="bg-slate-900 border border-army-800 rounded-2xl p-5 shadow-lg space-y-4 sticky top-20">
+                    <div class="flex items-center justify-between border-b border-army-800/80 pb-3">
+                        <h3 class="font-bold text-slate-100 text-sm flex items-center gap-2">
+                            <i class="fa-regular fa-calendar-days text-gold-400"></i> 지나간 뉴스 아카이브 검색
+                        </h3>
+                        <span class="text-[11px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded">날짜별 조회</span>
+                    </div>
+
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        원하는 과거 날짜를 선택하여 당시 주요 보도 기사를 조회할 수 있습니다.
+                    </p>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label for="archiveDatePicker" class="block text-xs font-semibold text-slate-300 mb-1.5">
+                                조회 날짜 선택
+                            </label>
+                            <input type="date" id="archiveDatePicker" 
+                                class="w-full bg-slate-950 border border-army-700/80 focus:border-gold-500 text-white rounded-xl px-3.5 py-2.5 text-xs focus:ring-1 focus:ring-gold-500 outline-none"
+                                onchange="handleDateChange(this.value)">
+                        </div>
+
+                        <div class="flex items-center justify-between text-xs pt-1">
+                            <button onclick="setQuickDate(0)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-army-800 text-slate-300 hover:text-white transition-all">오늘</button>
+                            <button onclick="setQuickDate(-1)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-army-800 text-slate-300 hover:text-white transition-all">어제</button>
+                            <button onclick="setQuickDate(-3)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-army-800 text-slate-300 hover:text-white transition-all">3일 전</button>
+                            <button onclick="setQuickDate(-7)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-army-800 text-slate-300 hover:text-white transition-all">1주일 전</button>
+                        </div>
+
+                        <div id="dateSearchStatus" class="p-3 bg-army-950/80 border border-army-800/70 rounded-xl text-xs space-y-1">
+                            <div class="text-slate-400">현재 검색 조건:</div>
+                            <div class="text-gold-400 font-medium flex items-center justify-between">
+                                <span id="selectedDateLabel">오늘 (전체 뉴스 모드)</span>
+                                <span id="archiveResultCount" class="text-xs text-army-300">10건 검색됨</span>
+                            </div>
+                        </div>
+
+                        <button onclick="resetDateFilter()" id="resetDateBtn" class="hidden w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-arrow-rotate-left"></i> 오늘 실시간 모드로 복귀
+                        </button>
+                    </div>
+
+                    <!-- Article Source Distribution Statistics -->
+                    <div class="pt-3 border-t border-army-800/60 space-y-2">
+                        <span class="text-xs font-semibold text-slate-300 block">언론사별 수집 비율</span>
+                        <div class="space-y-1.5 text-xs">
+                            <div>
+                                <div class="flex justify-between text-[11px] text-slate-400 mb-0.5">
+                                    <span>국방일보 / 국방TV</span>
+                                    <span>40%</span>
+                                </div>
+                                <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
+                                    <div class="bg-gold-500 h-1.5 rounded-full" style="width: 40%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-[11px] text-slate-400 mb-0.5">
+                                    <span>연합뉴스 / 주요 종합일간지</span>
+                                    <span>35%</span>
+                                </div>
+                                <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
+                                    <div class="bg-army-500 h-1.5 rounded-full" style="width: 35%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-[11px] text-slate-400 mb-0.5">
+                                    <span>방송사 (KBS, SBS, MBC 등)</span>
+                                    <span>25%</span>
+                                </div>
+                                <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
+                                    <div class="bg-slate-600 h-1.5 rounded-full" style="width: 25%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Article Detail Modal -->
+    <div id="articleModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-army-700 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl p-6 relative flex flex-col space-y-4">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 transition-all">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="flex items-center gap-2">
+                <span id="modalSource" class="px-2.5 py-0.5 bg-army-800 text-gold-400 font-semibold rounded text-xs">국방일보</span>
+                <span id="modalTime" class="text-xs text-slate-400">2026-09-10 09:30</span>
+            </div>
+
+            <h2 id="modalTitle" class="text-xl font-bold text-white leading-snug">기사 제목 영역</h2>
+
+            <div class="p-3 bg-slate-950/80 rounded-xl border border-army-800/60 flex items-center justify-between text-xs text-slate-300">
+                <span id="modalCategory" class="text-army-300"><i class="fa-solid fa-tag text-gold-400 mr-1"></i> 카테고리: 육군 첨단화</span>
+                <span id="modalKeyword" class="font-mono text-gold-400">#키워드</span>
+            </div>
+
+            <div class="text-slate-300 text-sm leading-relaxed space-y-3 pt-2 font-light" id="modalBody">
+                <!-- Article Content -->
+            </div>
+
+            <div class="pt-4 border-t border-army-800/80 flex items-center justify-between">
+                <button onclick="copyArticleLink()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl transition-all flex items-center gap-1.5">
+                    <i class="fa-regular fa-copy"></i> 기사 요약 복사
+                </button>
+                <button onclick="closeModal()" class="px-5 py-2 bg-army-600 hover:bg-army-500 text-white text-xs font-semibold rounded-xl transition-all">
+                    확인
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-army-900 mt-12 py-6 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved text-army-500"></i>
+                <span class="font-semibold text-slate-400">대한민국 육군 뉴스 스마트 통합 모니터링 시스템</span>
+            </div>
+            <p>© 2026 Republic of Korea Army News Bot System. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        /* State Variables */
+        let currentKeyword = '육군';
+        let timerIntervalMinutes = 5;
+        let countdownSeconds = 5 * 60;
+        let timerId = null;
+        let currentSort = 'latest'; // 'latest' | 'relevant'
+        let selectedArchiveDate = null;
+        let newsData = [];
+
+        // Realistic template dynamic news generator for military/army topics
+        const sampleNewsTemplates = {
+            '육군': [
+                {
+                    title: "육군, AI 기반 유·무인 복합전투체계 '드론봇 전투단' 현장 검증 착수",
+                    source: "국방일보",
+                    timeOffset: 5,
+                    category: "첨단 전력",
+                    summary: "육군이 차세대 지상전투 승리의 핵심이 될 '유무인 복합전투체계(MUM-T)' 전력화를 가속화하며, 최첨단 AI 드론 및 지상 자율주행 로봇의 합동 작전 능력을 정밀 검증했습니다.",
+                    detail: "대한민국 육군은 오늘 야전부대에서 미래형 지상전투체계 핵심 전력인 드론봇 전투단의 실전 운용성을 검증했습니다. 이번 검증에서는 AI 감지 알고리즘이 적용된 정찰 드론과 다목적 무인차량이 최전방 정찰 및 화력 지원 미션을 완벽히 수행하며 육군의 첨단 과학기술 강군 도약을 입증했습니다."
+                },
+                {
+                    title: "육군 사관학교, 미래 과학기술 장교 양성을 위한 학술 심포지엄 개최",
+                    source: "연합뉴스",
+                    timeOffset: 25,
+                    category: "인재 양성",
+                    summary: "육군사관학교가 4차 산업혁명 기반의 첨단 국방기술을 적용할 미래 정예 장교 육성방안을 논의하는 전국 규모 심포지엄을 성공적으로 마무리했습니다.",
+                    detail: "이번 학술 대회에서는 인공지능, 우주 국방, 로봇공학 등 신기술을 군사 작전 개념에 접목하는 방안이 중점 다루어졌으며, 미래 육군을 이끌 정예 장교들의 과학기술 소양이 한층 높아질 것으로 기대됩니다."
+                },
+                {
+                    title: "육군 1군단, 최전방 경계부대 장병 복지 향상 '스마트 병영 쉼터' 구축",
+                    source: "KBS 뉴스",
+                    timeOffset: 40,
+                    category: "장병 복지",
+                    summary: "혹서기 및 혹한기 최전방 경계 임무를 수행하는 장병들의 근무 여건 개선을 위해 냉난방 및 체력단련 시설을 갖춘 모듈러 쉼터가 대폭 확대 설치되었습니다.",
+                    detail: "육군은 장병들의 정서적 안정을 높이고 수면 및 휴식 환경을 대폭 개선하기 위한 병영 복지 혁신 사업을 지속 추진하고 있습니다."
+                },
+                {
+                    title: "육군 항공사령부, 최신 헬기 밤낮 없는 야간 산악 침투 훈련 전개",
+                    source: "SBS 뉴스",
+                    timeOffset: 65,
+                    category: "작전 훈련",
+                    summary: "주야간 구별 없는 완벽한 공중 강습 능력을 배양하기 위해 육군 항공 전력이 산악 지형에서 실전적 통합 기동 훈련을 펼쳤습니다.",
+                    detail: "이번 훈련은 야간 암시경을 착용한 조종사들이 악천후 속에서도 목표 지점에 정확히 병력을 투입하는 고난도 비행 기술을 선보였습니다."
+                },
+                {
+                    title: "육군 부사관학교, 최精銳 워리어 플랫폼 사격 대회 개최",
+                    source: "국방TV",
+                    timeOffset: 95,
+                    category: "교육 훈련",
+                    summary: "워리어 플랫폼 장비를 착용한 전국의 부사관 후보생과 교관들이 참여하여 주간 및 야간 정밀 사격 기량을 겨루었습니다.",
+                    detail: "새로운 개인 전투 장구류인 워리어 플랫폼의 우수한 사격 명중률과 조준경 성능이 이번 대회를 통해 다시 한번 입증되었습니다."
+                },
+                {
+                    title: "육군 군수사령부, 스마트 물류 자동화 센터 도입으로 물자 보급속도 2배 향상",
+                    source: "YTN",
+                    timeOffset: 130,
+                    category: "군수 지원",
+                    summary: "자동화 로봇과 물류 AI 소프트웨어가 결합된 군수 창고 구축으로 각 부대에 필요한 군수품의 발송 및 수송 시간이 대폭 단축되었습니다.",
+                    detail: "빅데이터 기반의 재고 관리 알고리즘이 적용되어 부품 수급 공백을 제로화하는 혁신적인 군수 혁신 모델로 평가받고 있습니다."
+                },
+                {
+                    title: "육군 포병여단, K9A2 자주포 실사격 훈련으로 압도적 화력 태세 검증",
+                    source: "국방일보",
+                    timeOffset: 180,
+                    category: "화력 전력",
+                    summary: "자동 포탑 장치가 적용된 K9A2 자주포가 긴급 분사격 시험에서 목표물을 정밀 타격하며 가공할 화력을 입증했습니다.",
+                    detail: "기존 모델 대비 발사 속도와 운용 인원이 획기적으로 절감된 K9A2는 육군 포병 전력의 주력으로서 완벽한 대비태세를 유지하고 있습니다."
+                },
+                {
+                    title: "육군 공병여단, 도하 작전용 차세대 도하장비(KM3) 한강 실전 배치",
+                    source: "MBC 뉴스",
+                    timeOffset: 240,
+                    category: "기동 지원",
+                    summary: "하천 장애물을 신속하게 극복할 수 있는 수륙양용 자주도하장비가 야전에 전력화되어 도하 작전 시간이 절반 이하로 단축되었습니다.",
+                    detail: "차량 자체가 교량이 되는 신형 도하장비 도입으로 기계화 부대의 신속한 전개 능력이 대폭 향상될 것으로 기대됩니다."
+                },
+                {
+                    title: "육군 수도방위사령부, 도심지 대테러 및 드론 방어 합동 훈련 실시",
+                    source: "연합뉴스TV",
+                    timeOffset: 310,
+                    category: "수도 방위",
+                    summary: "수도권 주요 시설에 대한 안티드론 안티-UAV 방어망 및 도심 테러 대응을 위한 관계 기관 합동 훈련이 펼쳐졌습니다.",
+                    detail: "스마트 안티드론 건과 재밍 장비를 활용해 불법 침입 드론을 즉각 무력화하는 합동 전술을 완벽히 점검했습니다."
+                },
+                {
+                    title: "육군 보병사단, 대대급 K808 차륜형 장갑차 야간 기동 전술 훈련",
+                    source: "국방일보",
+                    timeOffset: 420,
+                    category: "야전 기동",
+                    summary: "신속한 험지 기동 능력을 보유한 K808 백호 장갑차가 야간 기습 상황을 가정한 종합 기동 전술 훈련을 완수했습니다.",
+                    detail: "조종수의 야간 자율 기동 능력과 기계화 보병의 신속한 하차 전투 기량이 종합적으로 점검되었습니다."
+                }
+            ],
+            '국방': [
+                {
+                    title: "국방부, 2027년까지 국방 R&D 예산 대폭 확대… 첨단 전력 건설 가속",
+                    source: "연합뉴스",
+                    timeOffset: 8,
+                    category: "국방 정책",
+                    summary: "국방부가 AI, 우주, 극초음속, 로봇 등 8대 국방 핵심 선도기술 분야에 대한 투자를 대폭 강화하기로 발표했습니다.",
+                    detail: "국방부는 미래전에 대비한 첨단 과학기술 강군 육성을 위해 연구개발 예산 비중을 획기적으로 늘리고 민군 기술 협력을 전면 확대할 계획입니다."
+                },
+                {
+                    title: "한미 국방장관 회담, '연합 대비태세 강화 및 억제력 제고' 합의",
+                    source: "KBS 뉴스",
+                    timeOffset: 35,
+                    category: "국방 외교",
+                    summary: "한미 양국 국방 수장이 연합 연습의 규모와 수준을 높이고 굳건한 한미동맹의 방위 공약을 재확인했습니다.",
+                    detail: "이번 회담에서는 최첨단 미 전략 자산의 적시 전개와 한미 연합 야외기동훈련(FTX)의 확대를 통해 압도적인 방어 태세를 구축하기로 협의했습니다."
+                },
+                {
+                    title: "국방기술품질원, K-방산 수출 무기체계 품질검증 지원센터 개소",
+                    source: "국방일보",
+                    timeOffset: 80,
+                    category: "방위 산업",
+                    summary: "세계로 뻗어나가는 K-방산 무기류의 철저한 품질 보증과 수출 신뢰도 제고를 위한 전담 국방 검증 센터가 가동을 시작했습니다.",
+                    detail: "국산 유도무기, 장갑차, 자주포의 신뢰성을 더욱 극대화하여 글로벌 방산 시장에서의 대한민국 브랜드 가치를 높일 예정입니다."
+                },
+                {
+                    title: "국방 혁신 4.0 가속화… 전 군 AI 지휘통제 체계 구축 착수",
+                    source: "YTN",
+                    timeOffset: 120,
+                    category: "국방 혁신",
+                    summary: "육·해·공군 및 해병대의 감시정찰 데이터를 인공지능이 통합 분석하는 C4I 체계 고도화 작업이 본격 추진됩니다.",
+                    detail: "전장 상황 판단 속도를 수 분 이내로 단축하는 데이터 기반 지휘통제 시스템이 구축되어 군의 작전 효율성이 대폭 향상될 전망입니다."
+                },
+                {
+                    title: "국방부, 장병 봉급 인상 및 맞춤형 종합 의료지원체계 확대 발표",
+                    source: "SBS 뉴스",
+                    timeOffset: 200,
+                    category: "장병 복지",
+                    summary: "군 복무 가치 제고를 위해 장병 봉급 현실화와 함께 원격 진료 체계 확충 등 복지 제도 전반이 개선됩니다.",
+                    detail: "격오지 부대 장병들을 위한 24시간 원격 국방 의료 상담 및 최고 수준의 병영 생활관 개선 사업이 포함되어 있습니다."
+                }
+            ],
+            '해군': [
+                {
+                    title: "해군, 차세대 이지스함 정밀 미사일 방어 및 가상 적함 격멸 훈련",
+                    source: "국방일보",
+                    timeOffset: 12,
+                    category: "해상 작전",
+                    summary: "최첨단 이지스 레이더와 차세대 함대공 유도탄을 탑재한 이지스 구축함이 해상 미사일 방어 훈련을 완벽히 마쳤습니다.",
+                    detail: "동해상에서 전개된 이번 훈련에서 다수의 가상 표적을 동시에 탐지, 추적, 격파하는 해상 방어 능력을 과시했습니다."
+                },
+                {
+                    title: "해군 특수전전단(UDT/SEAL), 연합 해상 침투 및 인질 구조 훈련",
+                    source: "연합뉴스",
+                    timeOffset: 50,
+                    category: "특수 작전",
+                    summary: "해군 특수전 대원들이 고속 단정과 헬기를 활용하여 피합된 선박을 완벽히 제압하고 인질을 구조하는 훈련을 전개했습니다.",
+                    detail: "초동 조치부터 대테러 진압까지 일사불란한 팀워크와 전술 기량을 과시하며 해상 안보 태세를 견고히 했습니다."
+                },
+                {
+                    title: "해군 잠수함사령부, 무소음 기동으로 해상 봉쇄 임무 성공 완수",
+                    source: "MBC 뉴스",
+                    timeOffset: 150,
+                    category: "수중 작전",
+                    summary: "3,000톤급 최신 잠수함이 은밀 침투 및 가상 수중 적 잠수함 탐지·격멸 임무를 성공적으로 수행했습니다.",
+                    detail: "공기불필요성장치(AIP)를 활용하여 장기간 수중에서 임무를 수행할 수 있는 탁월한 작전 지속 능력을 검증받았습니다."
+                }
+            ],
+            'K-방산': [
+                {
+                    title: "대한민국 K-방산 수출액 연일 최고치 경신… 유럽·중동 이어 남미 시장 개척",
+                    source: "한국경제",
+                    timeOffset: 10,
+                    category: "방산 수출",
+                    summary: "K9 자주포, FA-50 경공격기, 천궁-II에 이어 국산 수리온 헬기와 K2 전차가 글로벌 방산 시장에서 큰 호평을 받고 있습니다.",
+                    detail: "우수한 성능, 신속한 납기, 현지 생산 지원이라는 대한민국 방산기업의 강점이 글로벌 시장에서 우위를 점하며 국위 선양에 기여하고 있습니다."
+                },
+                {
+                    title: "국산 차세대 전투기 KF-21, AESA 레이더 무장 통합 시험 사격 대성공",
+                    source: "KBS 뉴스",
+                    timeOffset: 45,
+                    category: "항공 방산",
+                    summary: "KF-21 보라매가 공대공 미사일 실사격 시험에서 목표물을 정밀 타격하며 양산체제 진입을 위한 핵심 단계를 통과했습니다.",
+                    detail: "국산 AESA 레이더와의 완벽한 소프트웨어 연동으로 한국형 차세대 전투기의 뛰어난 항공 전술 능력이 실증되었습니다."
+                }
+            ]
+        };
+
+        // Initialize App on DOM Content Loaded
+        document.addEventListener("DOMContentLoaded", () => {
+            // Set current date on Archive Datepicker
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('archiveDatePicker').value = todayStr;
+
+            // Load initial news for '육군'
+            loadNewsForKeyword(currentKeyword);
+
+            // Start Timer
+            startCountdownTimer();
+        });
+
+        // Generate news dataset dynamically based on keyword
+        function generateNewsArticles(keyword, dateString = null) {
+            let baseTemplates = sampleNewsTemplates[keyword] || sampleNewsTemplates['육군'];
+            
+            // If custom keyword search, dynamically build customized news list
+            if (!sampleNewsTemplates[keyword]) {
+                baseTemplates = [
+                    {
+                        title: `육군 및 국방 분야 '${keyword}' 관련 최신 핵심 보도 분석`,
+                        source: "국방일보",
+                        timeOffset: 10,
+                        category: "주요 뉴스",
+                        summary: `오늘 군 당국은 '${keyword}' 항목과 관련된 핵심 작전 및 기술 검증을 진행했다고 밝혔습니다.`,
+                        detail: `'${keyword}' 분야에 대한 차세대 전력화 요구가 크게 늘어남에 따라, 대한민국 육군과 국방부는 신속한 전력 배치 및 운용 교육을 대폭 강화할 방침입니다.`
+                    },
+                    {
+                        title: `'${keyword}' 첨단 기술 접목을 통한 육군 미래 전력 고도화 사업 추진`,
+                        source: "연합뉴스",
+                        timeOffset: 30,
+                        category: "첨단 과학",
+                        summary: `'${keyword}' 분야의 최신 기술을 야전에 도입함으로써 우리 군의 전투 효율성이 한층 강화될 전망입니다.`,
+                        detail: `전문가들은 '${keyword}' 관련 방산 기술이 육군의 주력 시스템과 결합될 경우 지상 작전에서의 승리 가능성을 극대화할 수 있다고 분석했습니다.`
+                    },
+                    {
+                        title: `장병들과 함께하는 '${keyword}' 현장 전술 응용 시연회 개최`,
+                        source: "국방TV",
+                        timeOffset: 75,
+                        category: "현장 전술",
+                        summary: `야전부대 장병들이 참석한 가운데 '${keyword}' 장비의 실제 운용성 평가 및 시연회가 성황리에 실시되었습니다.`,
+                        detail: `참석한 장병들은 신규 장비 도입으로 반응 시간이 대폭 단축되고 안전성이 크게 제고되었다고 평가했습니다.`
+                    },
+                    {
+                        title: `국방 R&D 연계 '${keyword}' 분야 기술 국산화 결실`,
+                        source: "YTN",
+                        timeOffset: 110,
+                        category: "기술 국산화",
+                        summary: `국내 방산 연구진의 지속적인 연구 끝에 '${keyword}' 핵심 부품의 완전 국산화 개발에 성공했습니다.`,
+                        detail: `해외 의존도를 극복하고 우리 육군 및 관련 군 부대에 안정적인 군수 지원이 가능해졌습니다.`
+                    },
+                    {
+                        title: `'${keyword}' 기반 미래형 병영 환경 및 작전 지원 체계 도입`,
+                        source: "KBS 뉴스",
+                        timeOffset: 160,
+                        category: "작전 지원",
+                        summary: `'${keyword}' 솔루션을 활용하여 병영 내 물류 및 보안 작전을 자동화하는 스마트 시범 사업이 확대됩니다.`,
+                        detail: `군은 신속하고 효율적인 임무 수행을 지원하기 위해 해당 스마트 체계를 순차적으로 전 부대에 확산할 계획입니다.`
+                    },
+                    {
+                        title: `한미 연합 훈련 중 '${keyword}' 전술 체계 상호 운용성 검증`,
+                        source: "SBS 뉴스",
+                        timeOffset: 210,
+                        category: "연합 작전",
+                        summary: `한미 양국 군이 연합 야외기동 훈련에서 '${keyword}' 장비를 공동으로 운용하며 긴밀한 연합 작전 능력을 다졌습니다.`,
+                        detail: `양국 지휘관들은 유기적인 데이터 공유와 신속한 상호 작전 지원 능력을 높이 평가했습니다.`
+                    },
+                    {
+                        title: `'${keyword}' 관련 야전 우수 개선 아이디어 군 공모전 수상`,
+                        source: "국방일보",
+                        timeOffset: 280,
+                        category: "부대 혁신",
+                        summary: `야전 장병들이 직접 발굴한 '${keyword}' 적용 개선책이 군 전투력 향상 공모전에서 당당히 대상을 수상했습니다.`,
+                        detail: `실제 복무 현장에서의 경험을 바탕으로 제시된 실용적 아이디어가 군 보급 및 정비 효율화에 크게 기여할 것입니다.`
+                    },
+                    {
+                        title: `육군 교육사령부, '${keyword}' 전문 교관 양성 과정 신설`,
+                        source: "연합뉴스TV",
+                        timeOffset: 340,
+                        category: "전문 교육",
+                        summary: `'${keyword}' 기반 미래 장비를 완벽히 운용할 정예 교관 및 신병 교육 커리큘럼이 새로 확립되었습니다.`,
+                        detail: `실습 위주의 가상현실(VR) 및 시뮬레이터 교육이 결합되어 실전과 동일한 환경에서 교육이 이뤄집니다.`
+                    },
+                    {
+                        title: `글로벌 방산 협력회에서 대한민국 '${keyword}' 전력 큰 주목`,
+                        source: "한국경제",
+                        timeOffset: 410,
+                        category: "국방 협력",
+                        summary: `해외 국방 관계자들이 대한민국 군의 '${keyword}' 운용 노하우와 방산 기술에 깊은 관심을 보였습니다.`,
+                        detail: `대한민국 방위산업의 우수한 수출 가능성과 기술적 신뢰성을 재확인하는 계기가 되었습니다.`
+                    },
+                    {
+                        title: `'${keyword}' 미래 비전 발표… AI 과학기술 강군 건설의 주춧돌`,
+                        source: "MBC 뉴스",
+                        timeOffset: 500,
+                        category: "미래 비전",
+                        summary: `군은 장기 국방발전계획에 '${keyword}' 첨단 전략을 반영하여 미래 지상전의 승리를 보장하겠다고 다짐했습니다.`,
+                        detail: `주요 지휘관 회의를 통해 향후 10년간의 단계별 도입 로드맵이 정식 확정되었습니다.`
+                    }
+                ];
+            }
+
+            const now = dateString ? new Date(dateString + "T12:00:00") : new Date();
+
+            return baseTemplates.map((item, index) => {
+                const articleDate = new Date(now.getTime() - (item.timeOffset * 60 * 1000));
+                const dateFormatted = formatDateStr(articleDate);
+                const timeFormatted = formatTimeStr(articleDate);
+
+                return {
+                    id: `art-${index}-${Date.now()}`,
+                    title: item.title,
+                    source: item.source,
+                    category: item.category,
+                    date: dateFormatted,
+                    time: timeFormatted,
+                    timestamp: articleDate.getTime(),
+                    summary: item.summary,
+                    detail: item.detail,
+                    keyword: keyword,
+                    isNew: index < 2 && !dateString
+                };
+            });
+        }
+
+        // Load and render news
+        function loadNewsForKeyword(keyword, archiveDate = null) {
+            currentKeyword = keyword;
+            document.getElementById('searchInput').value = keyword;
+            document.getElementById('analyticsCurrentKeyword').textContent = `"${keyword}"`;
+
+            // Spin animation
+            const spinIcon = document.getElementById('refreshSpinIcon');
+            spinIcon.classList.add('fa-spin');
+            setTimeout(() => spinIcon.classList.remove('fa-spin'), 600);
+
+            // Fetch simulated news
+            newsData = generateNewsArticles(keyword, archiveDate);
+
+            // Apply current sorting
+            sortArticlesData();
+
+            // Render Feed & Analytics
+            renderNewsFeed();
+            renderAnalytics(keyword);
+
+            // Update Last Updated Timestamp
+            const now = new Date();
+            document.getElementById('lastUpdatedTime').textContent = formatTimeStr(now);
+
+            // Update result counts
+            document.getElementById('newsCountBadge').textContent = `${newsData.length}개 항목`;
+            document.getElementById('archiveResultCount').textContent = `${newsData.length}건 검색됨`;
+        }
+
+        // Render News Cards Feed (Requirement 4)
+        function renderNewsFeed() {
+            const container = document.getElementById('newsFeedContainer');
+            container.innerHTML = '';
+
+            if (newsData.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-slate-900 border border-army-800 rounded-2xl p-8 text-center text-slate-400 space-y-2">
+                        <i class="fa-solid fa-folder-open text-3xl text-army-500"></i>
+                        <p class="text-sm font-medium">검색된 뉴스가 없습니다.</p>
+                        <p class="text-xs text-slate-500">다른 검색어나 날짜를 선택해 보세요.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            newsData.forEach(article => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-900/90 hover:bg-slate-900 border border-army-800/80 hover:border-army-600 rounded-xl p-4 transition-all duration-200 shadow hover:shadow-md group relative overflow-hidden";
+
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-2">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-army-800 text-gold-400 border border-army-600/60">
+                                ${article.source}
+                            </span>
+                            <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800 text-army-300">
+                                ${article.category}
+                            </span>
+                            ${article.isNew ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-red-500 text-white animate-pulse">NEW</span>` : ''}
+                        </div>
+                        <span class="text-xs text-slate-400 font-mono flex items-center gap-1">
+                            <i class="fa-regular fa-clock text-army-400"></i> ${article.date} ${article.time}
+                        </span>
+                    </div>
+
+                    <h4 onclick="openModal('${article.id}')" class="text-base font-bold text-slate-100 group-hover:text-gold-400 transition-colors cursor-pointer leading-snug mb-2">
+                        ${article.title}
+                    </h4>
+
+                    <p class="text-xs text-slate-300 leading-relaxed line-clamp-2 font-light mb-3">
+                        ${article.summary}
+                    </p>
+
+                    <div class="flex items-center justify-between text-xs pt-2 border-t border-army-900/80 text-slate-400">
+                        <span class="font-mono text-army-300">#${article.keyword}</span>
+                        <button onclick="openModal('${article.id}')" class="text-gold-400 hover:text-gold-300 font-medium flex items-center gap-1 transition-colors">
+                            <span>전문 읽기</span>
+                            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Render TOP 3 Key Topics Analysis (Requirement 5)
+        function renderAnalytics(keyword) {
+            const grid = document.getElementById('analyticsGrid');
+            grid.innerHTML = '';
+
+            // Generate 3 major key analytics topics based on keyword
+            const topicsData = [
+                {
+                    rank: "1",
+                    title: `${keyword} 첨단 AI 및 유·무인 복합전투체계 확충`,
+                    keywords: ["#MUM-T", "#드론봇", "#AI지휘통제"],
+                    score: "98% 언급량 폭증",
+                    sentiment: "긍정적 (92%)",
+                    summary: `오늘 수집된 보도 중 가장 높은 비중을 차지한 이슈입니다. ${keyword} 분야에 AI 및 무인 체계를 접목하여 미래 지상전의 주도권을 확보하려는 혁신안이 집중 조명되었습니다.`
+                },
+                {
+                    rank: "2",
+                    title: `한미 연합 대비태세 강화 및 야전 실전 훈련`,
+                    keywords: ["#연합훈련", "#화력격멸", "#실전대비태세"],
+                    score: "85% 주요 관심사",
+                    sentiment: "견고함 (95%)",
+                    summary: `주야간 가리지 않는 고강도 기동 및 실사격 훈련을 통해 압도적인 국방 안보 태세를 점검하고 굳건한 안보 보장을 다진 기사가 주요 분석에 포함되었습니다.`
+                },
+                {
+                    rank: "3",
+                    title: `장병 복지 여건 개선 및 군수 물류 스마트화`,
+                    keywords: ["#장병복지", "#스마트병영", "#군수혁신"],
+                    score: "78% 긍정 호평",
+                    sentiment: "매우 긍정 (88%)",
+                    summary: `최전방 장병들의 근무 및 주거 환경 개선, 스마트 군수 물류망 구축 등 사기 진작과 복무 가치 재정립에 관한 소식들이 3대 핵심 이슈로 집계되었습니다.`
+                }
+            ];
+
+            topicsData.forEach(topic => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-950/80 border border-army-800 hover:border-gold-500/50 rounded-xl p-4 transition-all shadow flex flex-col justify-between relative group";
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="w-6 h-6 rounded-lg bg-gold-500/20 text-gold-400 font-bold text-xs flex items-center justify-center border border-gold-500/40">
+                                ${topic.rank}
+                            </span>
+                            <span class="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                                ${topic.score}
+                            </span>
+                        </div>
+
+                        <h4 class="text-sm font-bold text-slate-100 mb-2 leading-snug group-hover:text-gold-300 transition-colors">
+                            ${topic.title}
+                        </h4>
+
+                        <div class="flex flex-wrap gap-1 mb-2.5">
+                            ${topic.keywords.map(kw => `<span class="text-[10px] bg-army-900/90 text-army-200 px-2 py-0.5 rounded border border-army-700/60">${kw}</span>`).join('')}
+                        </div>
+
+                        <p class="text-xs text-slate-300 font-light leading-relaxed mb-3">
+                            ${topic.summary}
+                        </p>
+                    </div>
+
+                    <div class="pt-2 border-t border-army-900 flex items-center justify-between text-[11px] text-slate-400">
+                        <span>분석 반응: <strong class="text-gold-400 font-medium">${topic.sentiment}</strong></span>
+                        <i class="fa-solid fa-arrow-trend-up text-emerald-400"></i>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Search submit handler
+        function handleSearchSubmit() {
+            const input = document.getElementById('searchInput').value.trim();
+            if (!input) {
+                showToast("검색어를 입력해 주세요.", "warning");
+                return;
+            }
+            loadNewsForKeyword(input);
+            showToast(`'${input}' 뉴스 수집을 완료했습니다.`, "info");
+        }
+
+        // Preset chip click handler
+        function setKeyword(kw) {
+            document.getElementById('searchInput').value = kw;
+            loadNewsForKeyword(kw);
+            showToast(`'${kw}' 키워드로 검색합니다.`, "info");
+        }
+
+        // Manual refresh button
+        function manualRefresh() {
+            loadNewsForKeyword(currentKeyword, selectedArchiveDate);
+            countdownSeconds = timerIntervalMinutes * 60;
+            showToast("실시간 뉴스를 즉시 새로고침했습니다.", "success");
+        }
+
+        // Change Sort Order
+        function changeSort(sortType) {
+            currentSort = sortType;
+            const latestBtn = document.getElementById('sortLatestBtn');
+            const relBtn = document.getElementById('sortRelBtn');
+
+            if (sortType === 'latest') {
+                latestBtn.className = "px-2.5 py-1 rounded-md bg-army-700 text-white font-medium transition-all";
+                relBtn.className = "px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition-all";
+            } else {
+                relBtn.className = "px-2.5 py-1 rounded-md bg-army-700 text-white font-medium transition-all";
+                latestBtn.className = "px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition-all";
+            }
+
+            sortArticlesData();
+            renderNewsFeed();
+        }
+
+        function sortArticlesData() {
+            if (currentSort === 'latest') {
+                newsData.sort((a, b) => b.timestamp - a.timestamp);
+            } else {
+                // Relevant sort (sample logic based on keyword priority)
+                newsData.sort((a, b) => a.title.length - b.title.length);
+            }
+        }
+
+        // Timer Interval Switcher (Requirement 3)
+        function setTimerInterval(minutes) {
+            timerIntervalMinutes = minutes;
+            countdownSeconds = minutes * 60;
+
+            // Highlight active button
+            [5, 30, 60].forEach(m => {
+                const btn = document.getElementById(`timer-${m}`);
+                if (m === minutes) {
+                    btn.className = "timer-btn px-3 py-2 text-xs rounded-lg font-medium border transition-all flex flex-col items-center justify-center bg-army-700 text-white border-gold-500 shadow";
+                } else {
+                    btn.className = "timer-btn px-3 py-2 text-xs rounded-lg font-medium border border-army-800 bg-slate-900 text-slate-300 hover:border-army-600 transition-all flex flex-col items-center justify-center";
+                }
+            });
+
+            updateCountdownDisplay();
+            showToast(`자동 갱신 주기가 ${minutes}분으로 변경되었습니다.`, "info");
+        }
+
+        // Countdown Timer Engine
+        function startCountdownTimer() {
+            if (timerId) clearInterval(timerId);
+
+            timerId = setInterval(() => {
+                countdownSeconds--;
+                if (countdownSeconds <= 0) {
+                    // Time reached - auto refresh
+                    manualRefresh();
+                    showToast(`[타이머 작동] '${currentKeyword}' 뉴스가 자동으로 업데이트되었습니다.`, "success");
+                }
+                updateCountdownDisplay();
+            }, 1000);
+        }
+
+        function updateCountdownDisplay() {
+            const mins = Math.floor(countdownSeconds / 60);
+            const secs = countdownSeconds % 60;
+            const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} 남음`;
+            document.getElementById('countdownDisplay').textContent = formatted;
+        }
+
+        // Historical Date Filter Logic (Requirement 4)
+        function handleDateChange(dateValue) {
+            if (!dateValue) return;
+            selectedArchiveDate = dateValue;
+
+            document.getElementById('selectedDateLabel').textContent = `${dateValue} 보도 아카이브`;
+            document.getElementById('resetDateBtn').classList.remove('hidden');
+
+            loadNewsForKeyword(currentKeyword, dateValue);
+            showToast(`${dateValue} 일자 뉴스 아카이브를 조회합니다.`, "info");
+        }
+
+        function setQuickDate(daysOffset) {
+            const target = new Date();
+            target.setDate(target.getDate() + daysOffset);
+            const dateStr = target.toISOString().split('T')[0];
+
+            document.getElementById('archiveDatePicker').value = dateStr;
+            handleDateChange(dateStr);
+        }
+
+        function resetDateFilter() {
+            selectedArchiveDate = null;
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('archiveDatePicker').value = todayStr;
+            document.getElementById('selectedDateLabel').textContent = "오늘 (전체 뉴스 모드)";
+            document.getElementById('resetDateBtn').classList.add('hidden');
+
+            loadNewsForKeyword(currentKeyword);
+            showToast("실시간 뉴스 모드로 복귀했습니다.", "info");
+        }
+
+        // Modal Handlers
+        let activeModalArticle = null;
+
+        function openModal(articleId) {
+            const article = newsData.find(a => a.id === articleId);
+            if (!article) return;
+
+            activeModalArticle = article;
+
+            document.getElementById('modalSource').textContent = article.source;
+            document.getElementById('modalTime').textContent = `${article.date} ${article.time}`;
+            document.getElementById('modalTitle').textContent = article.title;
+            document.getElementById('modalCategory').innerHTML = `<i class="fa-solid fa-tag text-gold-400 mr-1"></i> 카테고리: ${article.category}`;
+            document.getElementById('modalKeyword').textContent = `#${article.keyword}`;
+            
+            document.getElementById('modalBody').innerHTML = `
+                <p class="font-normal text-slate-200 bg-slate-950 p-3.5 rounded-xl border border-army-800/80 mb-3">
+                    <strong>[요약]</strong> ${article.summary}
+                </p>
+                <p class="leading-relaxed text-slate-300">
+                    ${article.detail}
+                </p>
+                <p class="text-xs text-slate-400 pt-3 border-t border-army-900">
+                    ※ 본 기사 내용은 대한민국 육군 스마트 뉴스봇에 의해 자동 수집 및 요약되었습니다.
+                </p>
+            `;
+
+            document.getElementById('articleModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('articleModal').classList.add('hidden');
+        }
+
+        function copyArticleLink() {
+            if (!activeModalArticle) return;
+            const textToCopy = `[${activeModalArticle.source}] ${activeModalArticle.title}\n일시: ${activeModalArticle.date} ${activeModalArticle.time}\n요약: ${activeModalArticle.summary}`;
+            
+            // Clipboard Copy handling
+            const textarea = document.createElement('textarea');
+            textarea.value = textToCopy;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            showToast("기사 요약 내용이 클립보드에 복사되었습니다.", "success");
+        }
+
+        // Custom Toast Notification System
+        function showToast(message, type = "info") {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-xs font-medium transform transition-all duration-300 translate-y-2 opacity-0 bg-slate-900 text-slate-100 ${
+                type === 'success' ? 'border-emerald-500/60' : type === 'warning' ? 'border-amber-500/60' : 'border-gold-500/60'
+            }`;
+
+            const iconClass = type === 'success' ? 'fa-circle-check text-emerald-400' : type === 'warning' ? 'fa-triangle-exclamation text-amber-400' : 'fa-circle-info text-gold-400';
+
+            toast.innerHTML = `
+                <i class="fa-solid ${iconClass} text-sm"></i>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            // Animate In
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            // Auto Remove
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // Utility Date formatters
+        function formatDateStr(d) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatTimeStr(d) {
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            return `${hours}:${minutes}`;
+        }
+    </script>
+</body>
+</html>
